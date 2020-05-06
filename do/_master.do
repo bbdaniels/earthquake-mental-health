@@ -9,7 +9,7 @@ global directory "/Users/bbdaniels/GitHub/earthquake-mental-health"
   global data "/Users/bbdaniels/Box/Earthquake/Constructed"
 	qui do "${directory}/ado/iecodebook.ado"
 
-  foreach dta in analysis_hh analysis_all {
+  foreach dta in analysis_hh analysis_mental analysis_all {
 
     iecodebook export ///
       "${data}/`dta'.dta" ///
@@ -38,7 +38,7 @@ global directory "/Users/bbdaniels/GitHub/earthquake-mental-health"
 		title(, justification(left) color(black) span pos(11)) ///
 		graphregion(color(white) lc(white) lw(med) la(center)) /// <- Delete la(center) for version < 15
 		ylab(,angle(0) nogrid) xtit(,placement(left) justification(left)) ///
-		yscale(noline) xscale(noline) legend(region(lc(none) fc(none)))
+		legend(region(lc(none) fc(none)))
 
 	global comb_opts graphregion(color(white) lc(white) lw(med) la(center))
 	global hist_opts ylab(, angle(0) axis(2)) yscale(noline alt axis(2)) ytit(, axis(2)) ytit(, axis(1)) yscale(off axis(2)) yscale(alt)
@@ -49,6 +49,6 @@ global directory "/Users/bbdaniels/GitHub/earthquake-mental-health"
 
   do "${directory}/do/figures.do"
   do "${directory}/do/tables.do"
-  do "${directory}/do/appendix.do"
+  do "${directory}/do/appendix-figures.do"
 
 * End of master do-file

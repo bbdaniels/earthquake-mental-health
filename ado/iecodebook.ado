@@ -255,6 +255,10 @@ qui {
     foreach character in , . < > / [ ] | & ! ^ + - : = ( ) "{" "}" "`" "'" {
       replace v1 = subinstr(v1,"`character'"," ",.)
     }
+      replace v1 = subinstr(v1, char(34), "", .) // Remove " sign
+      replace v1 = subinstr(v1, char(96), "", .) // Remove ` sign
+      replace v1 = subinstr(v1, char(36), "", .) // Remove $ sign
+      replace v1 = subinstr(v1, char(10), "", .) // Remove line end
 
     // Reshape one word per line
       split v1
