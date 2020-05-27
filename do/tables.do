@@ -118,7 +118,7 @@ use "$directory/data/analysis_mental.dta", clear
     est sto m_vil_fe
 
   outwrite all female male hh_fe vil_fe f_vil_fe m_vil_fe ///
-  using "${directory}/outputs/T_regressions_death.xlsx" ///
+  using "${directory}/outputs/T_regressions_death.csv" ///
   , replace stats(N r2) drop(hh_district_* ) format(%9.3f)
 
 // Have a lovely day!
