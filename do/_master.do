@@ -15,6 +15,8 @@ global directory "/Users/bbdaniels/GitHub/earthquake-mental-health"
 
   net from "https://github.com/bbdaniels/stata/raw/master/"
     net install forest , replace
+  net from "https://github.com/bbdaniels/stata/raw/master/"
+    net install outwrite , replace
 
   foreach dta in analysis_hh analysis_mental analysis_all {
 
