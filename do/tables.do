@@ -48,9 +48,9 @@ lab def hh_near_quake 0 "Far (20km+)" 1 "Near (<20km)"
     est sto male
 
   outwrite base interaction village_fe female male ///
-  using "${directory}/outputs/T_regressions.xlsx" ///
+  using "${directory}/outputs/T_regressions.csv" ///
   , replace stats(N r2) drop(hh_district_*) format(%9.3f)
-
+-
 // Table 2. Child Death Regressions
 use "$directory/data/analysis_mental.dta", clear
 
