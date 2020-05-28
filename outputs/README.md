@@ -4,6 +4,8 @@
 This table reports regression estimates of
 the effect of the earthquake on the mental health of adults
 who responded to the household survey mental health module.
+The dependent variable is the first principal component
+of the responses to the survey module (mean zero; SD 2.3).
 The first column reports the base specification,
 including the binary distance to the faultline (within 20km),
 the current household consumption measure,
@@ -25,6 +27,8 @@ the effect of the earthquake on the mental health of adults
 who responded to the household survey mental health module,
 including estimates of the effect of child death
 in the household on mental health outcomes.
+The dependent variable is the first principal component
+of the responses to the survey module (mean zero; SD 2.3).
 The first column reports the base specification.
 Controls are included for the binary distance to the faultline (within 20km),
 the current household consumption measure,
@@ -60,5 +64,26 @@ to determine statistical significance (colored markers).
 # Figure 2: Adult Mental Health by Distance
 ![](F_distance.png)
 
+This figure reports estimates of mental health outcomes
+across distance to the activated fault line,
+grouped by household consumption tercile.
+The outcome variable is the first principal component
+of the responses to the survey module (mean zero; SD 2.3).
+Bins are common across groups and created
+using the `binscatter` command.
+Point estimates are bin means;
+functional forms are estimated by a cubic B-spline estimator.
+
 # Figure 3: Adult Mental Health by Consumption
 ![](F_consumption.png)
+
+This figure reports estimates of mental health outcomes
+across household consumption levels,
+grouped by distance to the activated fault line.
+The outcome variable is the first principal component
+of the responses to the survey module (mean zero; SD 2.3).
+Bins are common across groups and created
+using the `binscatter` command.
+Point estimates are bin means;
+functional forms are estimated by a cubic B-spline estimator.
+Shaded areas show 95% confidence bands for the functional forms.
