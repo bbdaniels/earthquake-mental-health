@@ -64,7 +64,7 @@ use "$directory/data/analysis_mental.dta", clear
   // Regression : Child death
   reg indiv_mentalhealth ///
     hh_child_death ///
-    hh_near_quake indiv_male `indiv_controls' `fault_controls' ///
+    1.hh_near_quake indiv_male `indiv_controls' `fault_controls' ///
   , cl(village_code)
 
     est sto all
@@ -72,7 +72,7 @@ use "$directory/data/analysis_mental.dta", clear
   // Regression : Child death
   reg indiv_mentalhealth ///
     hh_child_death ///
-    hh_near_quake `indiv_controls'  `fault_controls' ///
+    1.hh_near_quake `indiv_controls'  `fault_controls' ///
   if indiv_male == 0 ///
   , cl(village_code)
 
@@ -81,7 +81,7 @@ use "$directory/data/analysis_mental.dta", clear
   // Regression : Child death
   reg indiv_mentalhealth ///
     hh_child_death ///
-    hh_near_quake `indiv_controls'  `fault_controls' ///
+    1.hh_near_quake `indiv_controls'  `fault_controls' ///
   if indiv_male == 1 ///
   , cl(village_code)
 
@@ -90,7 +90,7 @@ use "$directory/data/analysis_mental.dta", clear
   // Regression : Child death
   areg indiv_mentalhealth ///
     1.hh_child_death#indiv_male indiv_male ///
-    hh_near_quake `indiv_controls'  `fault_controls' ///
+    1.hh_near_quake `indiv_controls'  `fault_controls' ///
   , a(censusid) cl(village_code)
 
     est sto hh_fe
@@ -98,7 +98,7 @@ use "$directory/data/analysis_mental.dta", clear
   // Regression : Child death
   reg indiv_mentalhealth ///
     hh_child_death 1.hh_child_death#indiv_male indiv_male ///
-    hh_near_quake `indiv_controls'  `fault_controls'  ///
+    1.hh_near_quake `indiv_controls'  `fault_controls'  ///
   , a(village_code) cl(village_code)
 
     est sto vil_fe
@@ -106,7 +106,7 @@ use "$directory/data/analysis_mental.dta", clear
   // Regression : Child death
   reg indiv_mentalhealth ///
     hh_child_death ///
-    hh_near_quake `indiv_controls'  `fault_controls' ///
+    1.hh_near_quake `indiv_controls'  `fault_controls' ///
   if indiv_male == 0 ///
   , a(village_code) cl(village_code)
 
@@ -115,7 +115,7 @@ use "$directory/data/analysis_mental.dta", clear
   // Regression : Child death
   reg indiv_mentalhealth ///
     hh_child_death ///
-    hh_near_quake `indiv_controls'  `fault_controls' ///
+    1.hh_near_quake `indiv_controls'  `fault_controls' ///
   if indiv_male == 1 ///
   , a(village_code) cl(village_code)
 
