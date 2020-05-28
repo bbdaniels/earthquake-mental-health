@@ -54,6 +54,10 @@ lab def hh_near_quake 0 "Far (20km+)" 1 "Near (<20km)"
 // Table 2. Child Death Regressions
 use "$directory/data/analysis_mental.dta", clear
 
+  lab var hh_near_quake "Distance to Fault"
+  lab def hh_near_quake 0 "Far (20km+)" 1 "Near (<20km)"
+    lab val hh_near_quake hh_near_quake
+
   local fault_controls "hh_epidist hh_slope hh_district_1 hh_district_2 hh_district_3"
   local indiv_controls "c.indiv_age 1.indiv_married 1.indiv_edu_binary hh_logcons"
 
