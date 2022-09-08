@@ -10,12 +10,12 @@ global directory "/Users/bbdaniels/GitHub/earthquake-mental-health"
 
 * For data preparation: experimental version of |iecodebook|
 
-  global data "/Users/bbdaniels/Box/Earthquake/Constructed"
+  global data "/Users/bbdaniels/Library/CloudStorage/Box-Box/Earthquake/Constructed"
 	qui do "${directory}/ado/iecodebook.ado"
 
-  net from "https://github.com/bbdaniels/stata/raw/master/"
+  net from "https://github.com/bbdaniels/stata/raw/main/"
     net install forest , replace
-  net from "https://github.com/bbdaniels/stata/raw/master/"
+  net from "https://github.com/bbdaniels/stata/raw/main/"
     net install outwrite , replace
 
   foreach dta in analysis_hh analysis_mental analysis_all {

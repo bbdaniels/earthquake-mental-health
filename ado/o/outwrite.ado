@@ -1,7 +1,6 @@
 //! version 1.1 31DEC2019  Benjamin Daniels bbdaniels@gmail.com
 
 // outwrite - Stata module to consolidate multiple regressions and export the results to a .xlsx, .xls, .csv, or .tex file.
-
 cap prog drop outwrite
 prog def outwrite
 
@@ -19,7 +18,10 @@ syntax anything using/ ///
 	[COLnames(string asis)] ///
 	[Stats(passthru)] [Tstat] [Pvalue]  ///
 	[Replace] [Modify] [sheet(passthru)] ///
-	[Drop(string asis)]
+  [keep(passthru)] ///
+	[Drop(string asis)] ///
+  [noLABel] /// Disable variable labels
+  [*] /// enable other options in TeX
 
 qui {
 
@@ -29,8 +31,9 @@ if "`format'" == "" local format = "%9.2f"
 // Regressions setup
 if `: word count `anything'' >= 2 {
 
-	cap mat drop results results_STARS
-	regprep `anything' , below `stats' `tstat' `pvalue'
+	cap mat drop results 
+  cap mat drop results_STARS
+	regprep `anything' , below `stats' `tstat' `pvalue' `keep'
 
 	mat results = r(results)
 	mat results_STARS = r(results_STARS)
@@ -55,7 +58,7 @@ if `: word count `anything'' >= 2 {
 		fvrevar `drop' , tsonly
 		local drop = subinstr("`r(varlist)'"," ","|",.)
 	}
-
+  
 	// Set final row names
 	local conscounter = 0
 	if !`RN_FLAG' local rownames ""
@@ -65,8 +68,16 @@ if `: word count `anything'' >= 2 {
 	cap mat drop results_new_STARS
 	foreach name in `rownames_old' {
 		// Cruft
-		if strpos("`name'","_easytofind")==1 | strpos("`name'","o.") | /* regexm("`name'","b.") | */ regexm("`=subinstr("`name'","_easytofind0","",.)'","^(`drop')$") {
+		if strpos("`name'","_easytofind") == 1 ///
+     | strpos("`name'","o.") ///
+     | regexm("`=subinstr("`name'","_easytofind0","",.)'","^(`drop')$") {
+     * Skip the line
 		}
+    // Advance if no constant
+    else if regexm("`stats'",subinstr("`name'","_easytofind0","",.)) == 1 ///
+      & (`conscounter' == 0) {
+      local ++conscounter
+    }
 		// Constant
 		else if regexm("`name'","_cons_easytofind0")  & (`conscounter' == 0) {
 			if !`RN_FLAG' local rownames `"`rownames' "Constant" """'
@@ -95,7 +106,8 @@ if `: word count `anything'' >= 2 {
 					if regexm("`1'","^[0-9+]") local theLevel = regexs(0)
 					local theVar = substr("`1'",strpos("`1'",".")+1,.)
 					local theLab : var lab `theVar'
-					local theExp = "`theExp'`theLab'=`:label (`theVar') `theLevel''"
+					if "`label'" == "nolabel" local theExp = "`theExp'`:label (`theVar') `theLevel''"
+            else local theExp = "`theExp'`theLab'=`:label (`theVar') `theLevel''"
 				}
 			mac shift
 			}
@@ -152,11 +164,11 @@ else {
 		format(`format') ///
 		rownames(`rownames') ///
 		colnames(`colnames') ///
-		`replace' `sheet' `modify' `c' ext(`ext2')
+		`replace' `sheet' `modify' `c' ext(`ext2') `options' `stats'
 
 // end main program
 }
-di "Wrote table to `using'!"
+di "Wrote table to {browse `using'}!"
 end
 
 // Write matrix and matrix_STARS to xlsx ****************************************
@@ -239,18 +251,45 @@ syntax ///
   [colnames(string asis)] /// column titles
   [rownames(string asis)] /// row titles
   [format(string asis)] /// number of decimal places
-  [replace] [c] [ext(string asis)]
-
+  [ADDlines(string asis)] /// additional model info
+  [Hlines(string asis)] /// additional dividers
+  [replace] [c] [ext(string asis)] ///
+  [nobold] /// Disable bolding
+  [nonumbering] /// Disable numbering
+  [noparen] /// Disable SE parentheses
+  [PARentheses(string asis)] ///
+  [nostars] /// Disable SE parentheses
+  [stats(string asis)] /// Get stats
+  [STATFORMat(string asis)] /// Get stats formats
+  [*]
+  
 	// Load matrix into Stata
 	preserve
 		clear
 		qui svmat `anything'
 		qui tostring * , force replace format(`format')
+    
+    unab vars : *
 
 	// Remove blanks
 	qui foreach var of varlist * {
-    	replace `var' = "" if strpos(`var',".") == 1
+    replace `var' = "" if strpos(`var',".") == 1
 	}
+  
+  // Adjust stat formats
+  local nStat : word count `stats'
+    forv i = `nStat'(-1)1 {
+      local sformat : word `=`nStat'-`i'+1' of `statformat'
+      if "`sformat'" == "" local sformat "`format'"
+      foreach var of varlist * {
+        replace `var' = string(real(`var'),"`sformat'") in `=c(N)-`i'+1'
+      }
+    }
+  
+  // Remove blank rows
+  egen TEMP = concat(*)
+    gen TODROP = TEMP == ""
+    drop TEMP
 
 	// Stars into text
 	cap confirm matrix `anything'_STARS
@@ -260,7 +299,7 @@ syntax ///
 			local nrows = `r(N)'
 			local j = 0
 
-			foreach var of varlist * {
+			foreach var of varlist `vars' {
 				local ++j
 				local r = 0
 				if "`ext'" == "tex" forvalues i = 1/`r(N)' {
@@ -295,7 +334,7 @@ syntax ///
 		foreach var of varlist * {
 		  local ++ col
 		  local theName : word `col' of `colnames'
-		  replace `var' = "`theName'" in 1
+		  if "`var'" != "TODROP" replace `var' = "`theName'" in 1
 		}
 	}
 
@@ -313,39 +352,188 @@ syntax ///
 
 	// Update for tex
 	if "`ext'" == "tex" {
-		replace a = "{\bf " + a + "}"
+		if "`bold'" != "nobold" replace a = "{\bf " + a + "}"
 		foreach var of varlist `anything'* {
-			replace `var' = "\multicolumn{1}{c}" + "{\bf " + `var' + "}" in 1
+			if "`bold'" != "nobold" replace `var' = "{\bf " + `var' + "}" in 1
+      replace `var' = "\multicolumn{1}{p{0.13\linewidth}}{\centering{" + `var' + "}}" in 1
 		}
+        
+    drop if TODROP == 1
+    
+    // column numbering
+    if "`numbering'" != "nonumbering" {
+  		set obs `=`c(N)' + 1'
+  		tempvar sort
+  		  gen `sort' = _n
+  		  replace `sort' = 0 if (_n == _N)
+  		  gsort + `sort'
+  		  drop `sort'
 
-		egen FINAL = concat(*) , punct(" & ")
+  		local col = 0
+  		foreach var of varlist `anything'* {
+  		  local ++ col
+  		  replace `var' = "\multicolumn{1}{p{0.13\linewidth}}{\centering{(`col')}}" in 1
+  		}
+    }
 
-		keep FINAL
-		replace FINAL = FINAL + " \\"
-
+    // SE parentheses
+    if "`paren'" != "noparen" & "`parentheses'" == "" {
+      foreach var of varlist `anything'* {
+        replace `var' = "(" + subinstr(`var',"\phantom{***}",")\phantom{***}",.) ///
+          if (a == "" & strpos(`var',".")) in 3/l
+        if `nStat' > 0 ///
+          replace `var' = subinstr(`var',"*","\phantom{)}*",1) ///
+          if (a != "" & strpos(`var',".")) in 3/-`nStat'
+      }
+    }
+    
+    // Additional parentheses
+    if "`parentheses'" != "" {
+      local parentheses = subinstr(trim(itrim("`parentheses'"))," ",",",.)
+      gen sort = _n - 2 
+      foreach var of varlist `anything'* {
+        if "`stars'" == "nostars" ///
+          replace `var' = "(" + `var' + ")" if inlist(sort,`parentheses')
+        else ///
+          replace `var' = "(" + subinstr(`var',"\phantom{***}",")\phantom{***}",.) ///
+            if inlist(sort,`parentheses')
+      }      
+      drop sort
+    } 
+    
+    // Catch minus signs
+    foreach var of varlist `anything'* {
+      replace `var' = subinstr(`var',"-","$-$",.)
+    }
+    
+    // Stars gone
+    if "`stars'" == "nostars" {
+      foreach var of varlist `anything'* {
+        replace `var' = subinstr(`var',"*","",.)
+        replace `var' = subinstr(`var',"\phantom{)}","",.)
+        replace `var' = subinstr(`var',"\phantom{}","",.)
+      }
+    }
+    
+    // Prepare tex output
+		egen FINAL = concat(a `vars') , punct(" & ")
+  		keep FINAL
+  		replace FINAL = FINAL + " \\"
+    
 		gen sort = _n
-		qui count
-			local total = `r(N)'
-			set obs `=`total'+1'
-			replace sort = 0 if sort == .
-			replace sort = .5 in 1
-			set obs `=`total'+2'
-			replace sort = 1 if sort == .
-			gsort + sort
-			set obs `=`total'+4'
+    
+    // Find first statistic
+    if "`stats'" != "" {
+      local firstStat : word 1 of `stats'
+        expand 2 if ///
+          (strpos(FINAL,"`firstStat' &") == 1) ///
+        | (strpos(FINAL,"`firstStat'} &") > 0) , gen(false)
+    }
 
-		replace FINAL = "\begin{tabular}{@{\extracolsep{5pt}}lrrrrrrrrrrrrrrr}" in 1
-		replace FINAL = "\hline" in 3
-		replace FINAL = "\hline" in `=`total'+3'
-		replace FINAL = "\end{tabular}" in `=`total'+4'
+    // Setup for header
+		qui count
+			set obs `=`c(N)'+1'
+			   replace sort = 0 if sort == .
+			   replace sort = .50 in 1
+			   replace sort = .75 in 2
+			set obs `=`c(N)'+1'
+			   replace sort = 1 if sort == .
+      set obs `=`c(N)'+1'
+			   replace sort = 0.25 if sort == .
+			if "`stats'" != "" gsort + sort - false
+        else gsort + sort
+  
+    // Separator for statistics
+    if "`stats'" != "" {
+   		replace FINAL = "\hline" if false == 1
+      drop false
+    }
+    
+    // Header
+		if "`stars'" == "nostars" replace FINAL = "\begin{tabular}{@{\extracolsep{5pt}}lccccccccccccc}" in 1
+      else replace FINAL = "\begin{tabular}{@{\extracolsep{5pt}}lrrrrrrrrrrrrrrr}" in 1
+		replace FINAL = "\toprule" in 2
+		replace FINAL = "\hline" in 5    
+    
+    // Additional lines
+    if `"`addlines'"' != "" {
+      parenParse `addlines'
+      forvalues i = 1/`r(nStrings)' {
+        set obs `=`c(N)'+1'
+  		  replace FINAL = `"`r(string`i')'"' in `c(N)'
+        replace FINAL = trim(itrim(FINAL)) in `c(N)'
+        replace FINAL = subinstr(FINAL,`"" ""',`"}} & \multicolumn{1}{p{0.13\linewidth}}{\centering{"',.) in `c(N)'
+        replace FINAL = "{" + subinstr(FINAL,`"""',`""',.) + "}} \\" in `c(N)'
+      }
+    }
+    
+    // Additional dividers
+    if "`hlines'" != "" {
+      local hlines = subinstr(trim(itrim("`hlines'"))," ",",",.)
+      replace sort = _n - 5
+      expand 2 if inlist(sort,`hlines') , gen(false)
+      sort sort false
+      replace FINAL = "\hline" if false == 1
+      drop false
+    }  
+    
+    // Footer
+    set obs `=`c(N)'+2'
+		replace FINAL = "\hline" in `=`c(N)'-1'
+		replace FINAL = "\end{tabular}" in `c(N)'
 		drop sort
 	}
-
+   
 	// Write
 	if inlist("`ext'","tex","csv") outsheet `using' , `c' `replace' noq non
 		else export excel `using' , `replace'
 
 end // end mat2csv
+
+// Program to parse on parenthesis
+cap prog drop parenParse
+program def parenParse , rclass
+
+  syntax anything
+
+  local N = length(`"`anything'"')
+
+  local x = 0
+  local parCount = 0
+
+  // Run through string
+  forv i = 1/`N' {
+    local char = substr(`"`anything'"',`i',1) // Get next character
+
+    // Increment unit and counter when encountering open parenthesis
+    if `"`char'"' == "(" {
+      if `parCount' == 0 {
+        local ++x // Start next item when encountering new block
+      }
+      else {
+        local string`x' = `"`string`x''`char'"'
+      }
+      local ++parCount
+    }
+    // Otherwise de-increment counter if close parenthesis
+    else if `"`char'"' == ")" {
+      local --parCount
+      if `parCount' != 0 local string`x' = `"`string`x''`char'"'
+    }
+    // Otherwise add character to string block
+    else {
+      local string`x' = `"`string`x''`char'"'
+    }
+  }
+
+  // Return strings to calling program
+  return scalar nStrings = `x'
+  forv i = 1/`x' {
+    return local string`i' = `"`string`i''"'
+  }
+
+end
+// End
 
 * Have a lovely day!
 
