@@ -14,7 +14,7 @@ forest reg ///
     if indiv_dead == 0 & indiv_age > 17 ) ///
   , t(hh_faultdist) bh d cl(village_code) ///
     graph(note(,size(vsmall)) xoverhang ylab(,labsize(vsmall)) ) /// 
-    controls(hh_epidist hh_slope hh_district_1 hh_district_2 hh_district_3) sort(local) mde b 
+    controls(hh_epidist hh_slope hh_district_1 hh_district_2 hh_district_3) sort(local) mde 
 
   graph export "${directory}/outputs/F_exogeneity.png", replace width(4000)
 	
