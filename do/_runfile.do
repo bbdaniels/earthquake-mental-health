@@ -50,7 +50,7 @@ global directory "/Users/bbdaniels/GitHub/earthquake-mental-health"
 	global numbering `""(1)" "(2)" "(3)" "(4)" "(5)" "(6)" "(7)" "(8)" "(9)" "(10)""'
 
 * Run all program files
-
+-
   do "${directory}/do/figures.do"
   do "${directory}/do/tables.do"
   do "${directory}/do/appendix-figures.do"
