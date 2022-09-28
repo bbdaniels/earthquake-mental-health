@@ -75,5 +75,38 @@ lab def hh_near_quake 0 "Far (20km+)" 1 "Near (<20km)"
     
       graph export "${directory}/outputs/F_gradient.png", replace width(4000)
       graph export "${directory}/outputs/F_gradient.eps", replace 
+      
+// Figure 3. Gradient
+use "$directory/data/analysis_mental.dta", clear
+
+lab var hh_near_quake "Distance to Fault"
+lab def hh_near_quake 0 "Far (20km+)" 1 "Near (<20km)"
+  lab val hh_near_quake hh_near_quake
+
+  local fault_controls "hh_epidist hh_slope hh_district_1 hh_district_2 hh_district_3"
+  local indiv_controls "indiv_age indiv_male indiv_married indiv_edu_binary"
+  
+    reg indiv_mentalhealth ///
+      c.hh_faultdist##c.hh_logcons  `indiv_controls' `fault_controls' ///
+    , cl(village_code)
+    
+    margins, at(hh_faultdist=(0(2)60) hh_logcons=(9(0.2)14)) vce(unconditional) ///
+      saving("${directory}/outputs/predictions.dta", replace)
+    use "${directory}/outputs/predictions.dta", clear
+      append using "$directory/data/analysis_mental.dta"
+           winsor hh_logcons , p(0.05) g(w)
+
+    lab var _margin "Predicted Mental Health (Higher = Better)"
+
+    twoway ///
+      (contour _margin _at2 _at1   if _at < ., ccuts(-3(0.25)1) ) ///
+      (scatter hh_logcons hh_faultdist  , ///
+        m(O) mc(black) mlw(vvthin) mfc(none) msize(tiny) ///
+        jitter(1) jitterseed(123456))  ///
+      if hh_faultdist< 60 | hh_faultdist == . ///
+    , legend(on order(1 "True Sample") ring(0) pos(11)) xscale(reverse)
+    
+      graph export "${directory}/outputs/F_gradient-lin.png", replace width(4000)
+      graph export "${directory}/outputs/F_gradient-lin.eps", replace 
 
 // Have a lovely day!

@@ -11,28 +11,21 @@ lab def hh_near_quake 0 "Far (20km+)" 1 "Near (<20km)"
   local indiv_controls "c.indiv_age indiv_male 1.indiv_married 1.indiv_edu_binary"
 
 
-  // Regression : Interaction regression
+  // Regression: Interaction 
   reg indiv_mentalhealth ///
     c.hh_faultdist##c.hh_logcons `indiv_controls' `fault_controls' ///
   , cl(village_code)
 
     est sto interaction
     
-  // Regression : Distance regression
+  // Regression: Quadratic (visual model)
   reg indiv_mentalhealth ///
     c.hh_faultdist##c.hh_logcons##c.hh_logcons  `indiv_controls' `fault_controls' ///
   , cl(village_code)
 
     est sto quad
 
-  // Regression : Interaction regression
-  reg indiv_mentalhealth ///
-    c.hh_faultdist##c.hh_logcons `indiv_controls' `fault_controls' ///
-  , cl(village_code) a(village_code)
-
-    est sto villagefe
-
-  // Regression : Interaction regression
+  // Regression: Women
   reg indiv_mentalhealth ///
     c.hh_faultdist##c.hh_logcons `indiv_controls' `fault_controls' ///
   if indiv_male == 0 ///
@@ -40,18 +33,26 @@ lab def hh_near_quake 0 "Far (20km+)" 1 "Near (<20km)"
 
     est sto women
 
-  // Regression : Interaction regression
+  // Regression: Men
   reg indiv_mentalhealth ///
     c.hh_faultdist##c.hh_logcons `indiv_controls' `fault_controls' ///
   if indiv_male == 1 ///
   , cl(village_code)
 
     est sto men
+    
+  // Regression: Robustness
+  reg indiv_mentalhealth ///
+    c.hh_faultdist##c.hh_logcons `indiv_controls' `fault_controls' hh_fault_minimum ///
+  , cl(village_code)
 
-  outwrite interaction quad women men villagefe ///
+    est sto robust
+    
+  // Write to file
+  outwrite interaction quad women men robust ///
   using "${directory}/outputs/T_regressions.tex" ///
-  , replace stats(N r2) drop(hh_epidist hh_slope hh_district_*) format(%9.3f) ///
-    col("Base" "Quadratic" "Women" "Men" "Village FE") ///
+  , replace stats(N r2) drop(hh_epidist hh_slope hh_district_* hh_fault_minimum) format(%9.3f) ///
+    col("Base" "Quadratic" "Women" "Men" "Robustness") ///
     row("Distance from Fault (km)" ""  ///
         "(log) HH Consumption" "" ///
         "Distance $\times$ Consumption" "" ///
@@ -69,7 +70,7 @@ use "$directory/data/analysis_mental.dta", clear
   local fault_controls "hh_epidist hh_slope hh_district_1 hh_district_2 hh_district_3"
   local indiv_controls "c.indiv_age indiv_male 1.indiv_married 1.indiv_edu_binary hh_logcons"
 
-  // Regression : Child death
+  // Regression: Child death
   reg indiv_mentalhealth ///
     hh_child_death 1.hh_child_death#indiv_male ///
     c.hh_faultdist##c.hh_logcons `indiv_controls' `fault_controls' ///
@@ -77,7 +78,7 @@ use "$directory/data/analysis_mental.dta", clear
 
     est sto all
 
-  // Regression : Child death
+  // Regression: Women
   reg indiv_mentalhealth ///
     hh_child_death ///
     c.hh_faultdist##c.hh_logcons `indiv_controls' `fault_controls' ///
@@ -86,7 +87,7 @@ use "$directory/data/analysis_mental.dta", clear
 
     est sto female
 
-  // Regression : Child death
+  // Regression: Men
   reg indiv_mentalhealth ///
     hh_child_death ///
     c.hh_faultdist##c.hh_logcons `indiv_controls' `fault_controls' ///
@@ -95,7 +96,7 @@ use "$directory/data/analysis_mental.dta", clear
 
     est sto male
 
-  // Regression : Child death
+  // Regression: Household FE
   areg indiv_mentalhealth ///
     1.hh_child_death#0.indiv_male ///
     c.hh_faultdist##c.hh_logcons `indiv_controls'  `fault_controls' ///
@@ -103,36 +104,18 @@ use "$directory/data/analysis_mental.dta", clear
 
     est sto hh_fe
 
-  // Regression : Child death
+  // Regression: Robustness
   reg indiv_mentalhealth ///
     hh_child_death 1.hh_child_death#indiv_male ///
-    c.hh_faultdist##c.hh_logcons `indiv_controls'  `fault_controls'  ///
-  , a(village_code) cl(village_code)
+    c.hh_faultdist##c.hh_logcons `indiv_controls' `fault_controls' hh_fault_minimum ///
+  , cl(village_code)
 
-    est sto vil_fe
+    est sto robust
 
-  // Regression : Child death
-  reg indiv_mentalhealth ///
-    hh_child_death ///
-    hh_faultdist `indiv_controls'  `fault_controls' ///
-  if indiv_male == 0 ///
-  , a(village_code) cl(village_code)
-
-    est sto f_vil_fe
-
-  // Regression : Child death
-  reg indiv_mentalhealth ///
-    hh_child_death ///
-    hh_faultdist `indiv_controls'  `fault_controls' ///
-  if indiv_male == 1 ///
-  , a(village_code) cl(village_code)
-
-    est sto m_vil_fe
-
-  outwrite all female male hh_fe vil_fe f_vil_fe m_vil_fe ///
+  outwrite all female male hh_fe robust ///
   using "${directory}/outputs/T_regressions_death.tex" ///
-  , replace stats(N r2) drop(indiv_male hh_epidist hh_slope hh_district_*) format(%9.3f) ///
-    col("Pooled" "Women" "Men" "Household FE" "Village FE" "Women Village FE" "Men Village FE") ///
+  , replace stats(N r2) drop(indiv_male hh_epidist hh_slope hh_district_* hh_fault_minimum) format(%9.3f) ///
+    col("Pooled" "Women" "Men" "Household FE" "Robustness") ///
     row("Child Death in Household" "" ///
         "Child Death $\times$ Woman" "" ///
         "Distance from Fault (km)" ""  ///
